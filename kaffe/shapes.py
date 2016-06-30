@@ -78,7 +78,7 @@ def shape_slice(node):
 
     # We only slices shape transformations that have equal sized slices
     slice_points = [0] + list(node.layer.parameters.slice_point) + [input_shape[slice_dim]]
-    slice_sizes =  np.array(slice_points[1:]) - np.array(slice_points[:-1])
+    slice_sizes = np.array(slice_points[1:]) - np.array(slice_points[:-1])
     slice_size = slice_sizes[0]
     assert np.all(slice_sizes == slice_size)
     assert sum(slice_sizes) == input_shape[slice_dim]

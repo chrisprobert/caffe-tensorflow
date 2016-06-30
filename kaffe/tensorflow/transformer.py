@@ -145,6 +145,14 @@ class TensorFlowMapper(NodeMapper):
     def map_dropout(self, node):
         return TensorFlowNode('dropout', node.parameters.dropout_ratio)
 
+    def map_flatten(self, node):
+        return TensorFlowNode('reshape', np.array(node.output_shape))
+
+    def map_slice(self, node):
+        slit_dim = node.layer.parameters.slice_dim
+        num_split = node.output_shape[slit_dim + 1]
+        return TensorFlowNode('split', slit_dim, num_split)
+
     def map_batch_norm(self, node):
         scale_offset = len(node.data) == 4
         kwargs = {} if scale_offset else {'scale_offset': False}

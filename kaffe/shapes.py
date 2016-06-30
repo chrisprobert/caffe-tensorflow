@@ -1,6 +1,8 @@
 import math
 from collections import namedtuple
 
+import numpy as np
+
 from .errors import KaffeError
 
 TensorShape = namedtuple('TensorShape', ['batch_size', 'channels', 'height', 'width'])
@@ -68,6 +70,29 @@ def shape_concat(node):
         else:
             output_shape[axis] += parent.output_shape[axis]
     return tuple(output_shape)
+
+
+def shape_slice(node):
+    slice_dim = node.layer.parameters.slice_dim
+    input_shape = node.get_only_parent().output_shape
+
+    # We only slices shape transformations that have equal sized slices
+    slice_points = [0] + list(node.layer.parameters.slice_point) + [input_shape[slice_dim]]
+    slice_sizes =  np.array(slice_points[1:]) - np.array(slice_points[:-1])
+    slice_size = slice_sizes[0]
+    assert np.all(slice_sizes == slice_size)
+    assert sum(slice_sizes) == input_shape[slice_dim]
+
+    output_shape = list(input_shape)
+    output_shape[slice_dim] = slice_size
+    output_shape[slice_dim + 1] = slice_sizes.shape[0]
+    return TensorShape(*output_shape)
+
+
+def shape_flatten(node):
+    input_shape = node.get_only_parent().output_shape
+    flat_shape = input_shape.channels * input_shape.height * input_shape.width
+    return TensorShape(input_shape.batch_size, flat_shape, 1, 1)
 
 
 def shape_convolution(node):

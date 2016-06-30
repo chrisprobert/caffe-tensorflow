@@ -18,8 +18,13 @@ class Node(object):
         self.metadata = {}
 
     def add_parent(self, parent_node):
-        assert parent_node not in self.parents
-        self.parents.append(parent_node)
+        if self.layer.kind == 'Eltwise' and parent_node.layer.kind == 'Slice':
+            # this is a valid maxpool configuration - only add if not already parent
+            if parent_node not in self.parents:
+                self.parents.append(parent_node)
+        else:
+            assert parent_node not in self.parents
+            self.parents.append(parent_node)
         if self not in parent_node.children:
             parent_node.children.append(self)
 
@@ -233,7 +238,9 @@ class GraphBuilder(object):
                     parent_node = graph.get_node(input_name)
                 node.add_parent(parent_node)
             if len(layer.top)>1:
-                raise KaffeError('Multiple top nodes are not supported.')
+                # For now, just allow Slice nodes to be created
+                if layer.type != u'Slice':
+                    raise KaffeError('Multiple top nodes are not supported.')
             for output_name in layer.top:
                 if output_name == layer.name:
                     # Output is named the same as the node. No further action required.
